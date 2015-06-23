@@ -1,0 +1,8 @@
+[package]
+name = "heartbeats"
+version = "0.1.0"
+authors = ["Connor Imes <cimes@mozilla.com>"]
+build="build.rs"
+
+[dependencies]
+libc = "0.1"
