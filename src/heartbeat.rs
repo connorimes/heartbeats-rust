@@ -22,7 +22,7 @@ extern {
 }
 
 pub struct Heartbeat {
-    hb: *mut c_void,
+    pub hb: *mut c_void,
 }
 
 impl Heartbeat {
