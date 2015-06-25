@@ -1,4 +1,4 @@
 extern crate libc;
+extern crate energymon_sys;
 
-pub mod energy_reader;
 pub mod heartbeat;

@@ -1,7 +1,7 @@
 use libc::{uint64_t, int64_t, c_void, c_char, c_double};
 use std::ffi::CString;
 use std::ptr;
-use energy_reader::EnergyReader;
+use energymon_sys::energymon::EnergyMon;
 
 #[link(name = "hbt-acc-pow")]
 extern {
@@ -10,7 +10,7 @@ extern {
                               buffer_depth: uint64_t,
                               log_name: *const c_char,
                               num_energy_impls: uint64_t,
-                              energy_impls: *mut c_void) -> *mut c_void;
+                              energy_impls: *mut EnergyMon) -> *mut c_void;
 
     fn heartbeat_acc(hb: *mut c_void,
                      user_tag: uint64_t,
@@ -30,7 +30,7 @@ impl Heartbeat {
                window_size: u64,
                buffer_depth: u64, 
                log_name: &str,
-               energy_impl: &mut EnergyReader) -> Result<Heartbeat, String> {
+               energy_impl: &mut EnergyMon) -> Result<Heartbeat, String> {
         let parent = match parent {
             Some(p) => p.hb,
             None => ptr::null_mut(),
@@ -38,7 +38,7 @@ impl Heartbeat {
         let heart = unsafe {
             heartbeat_acc_pow_init(parent, window_size, buffer_depth,
                                    CString::new(log_name).unwrap().as_ptr(),
-                                   1, energy_impl.er)
+                                   1, energy_impl)
         };
         if heart.is_null() {
             return Err("Failed to initialize heartbeat".to_string());
