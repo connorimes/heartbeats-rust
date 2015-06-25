@@ -30,15 +30,24 @@ impl Heartbeat {
                window_size: u64,
                buffer_depth: u64, 
                log_name: &str,
-               energy_impl: &mut EnergyMon) -> Result<Heartbeat, String> {
+               energy_impl: Option<&mut EnergyMon>) -> Result<Heartbeat, String> {
         let parent = match parent {
             Some(p) => p.hb,
             None => ptr::null_mut(),
         };
+        let num_energy_impls: u64;
+        let mut em: *mut EnergyMon;
+        if energy_impl.is_some() {
+            num_energy_impls = 1;
+            em = energy_impl.unwrap();
+        } else {
+            num_energy_impls = 0;
+            em = ptr::null_mut();
+        }
         let heart = unsafe {
             heartbeat_acc_pow_init(parent, window_size, buffer_depth,
                                    CString::new(log_name).unwrap().as_ptr(),
-                                   1, energy_impl)
+                                   num_energy_impls, em)
         };
         if heart.is_null() {
             return Err("Failed to initialize heartbeat".to_string());
@@ -69,3 +78,8 @@ impl Drop for Heartbeat {
     }
 }
 
+#[test]
+fn test_no_energymon() {
+    let mut hb = Heartbeat::new(None, 20, 20, "heartbeat.log", None).unwrap();
+    hb.heartbeat(0, 1, 0.0, None);
+}
