@@ -35,11 +35,15 @@ impl Heartbeat {
     pub fn new(parent: Option<&mut Heartbeat>,
                window_size: u64,
                buffer_depth: u64, 
-               log_name: &str,
+               log_name: Option<&str>,
                energy_impl: Option<&mut EnergyMon>) -> Result<Heartbeat, String> {
         let parent = match parent {
             Some(p) => p.hb,
             None => ptr::null_mut(),
+        };
+        let log_name = match log_name {
+          Some(n) => CString::new(n).unwrap().as_ptr(),
+          None => ptr::null(),
         };
         let num_energy_impls: u64;
         let mut em: *mut EnergyMon;
@@ -51,8 +55,7 @@ impl Heartbeat {
             em = ptr::null_mut();
         }
         let heart = unsafe {
-            heartbeat_acc_pow_init(parent, window_size, buffer_depth,
-                                   CString::new(log_name).unwrap().as_ptr(),
+            heartbeat_acc_pow_init(parent, window_size, buffer_depth, log_name,
                                    num_energy_impls, em)
         };
         if heart.is_null() {
@@ -102,8 +105,13 @@ impl Drop for Heartbeat {
     }
 }
 
-#[test]
-fn test_no_energymon() {
-    let mut hb = Heartbeat::new(None, 20, 20, "heartbeat.log", None).unwrap();
-    hb.heartbeat(0, 1, 0.0, None);
+#[cfg(test)]
+mod test {
+    use super::Heartbeat;
+
+    #[test]
+    fn test_no_energymon() {
+        let mut hb = Heartbeat::new(None, 20, 20, None, None).unwrap();
+        hb.heartbeat(0, 1, 0.0, None);
+    }
 }
