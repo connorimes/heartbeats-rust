@@ -19,6 +19,12 @@ extern {
                      hb_prev: *mut c_void) -> int64_t;
 
     fn heartbeat_finish(hb: *mut c_void);
+
+    fn hb_get_user_tag(hb: *const c_void) -> uint64_t;
+
+    fn hb_get_window_rate(hb: *const c_void) -> c_double;
+
+    fn hb_get_window_power(hb: *const c_void) -> c_double;
 }
 
 pub struct Heartbeat {
@@ -66,6 +72,24 @@ impl Heartbeat {
         };
         unsafe {
             heartbeat_acc(self.hb, tag, work, accuracy, hb_prev)
+        }
+    }
+
+    pub fn get_tag(&mut self) -> u64 {
+        unsafe {
+            hb_get_user_tag(self.hb)
+        }
+    }
+
+    pub fn get_window_perf(&mut self) -> f64 {
+        unsafe {
+            hb_get_window_rate(self.hb)
+        }
+    }
+
+    pub fn get_window_pwr(&mut self) -> f64 {
+        unsafe {
+            hb_get_window_power(self.hb)
         }
     }
 }
