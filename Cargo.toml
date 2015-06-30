@@ -1,10 +1,10 @@
 [package]
-name = "heartbeats_sys"
+name = "heartbeats-sys"
 version = "0.1.0"
 authors = ["Connor Imes <cimes@mozilla.com>"]
 
 [dependencies]
 libc = "0.1"
 
-[dependencies.energymon_sys]
-git = "https://github.com/connorimes/energymon_sys.git"
+[dependencies.energymon-sys]
+git = "https://github.com/connorimes/energymon-sys.git"
