@@ -27,11 +27,14 @@ extern {
     fn hb_get_window_power(hb: *const c_void) -> c_double;
 }
 
+/// A `Heartbeat` is used for tracking performance/accuracy/power of recurring jobs.
 pub struct Heartbeat {
+    /// The underlying C struct `heartbeat_t`.
     pub hb: *mut c_void,
 }
 
 impl Heartbeat {
+    /// Allocate and initialize a new `Heartbeat` with its underlying C struct.
     pub fn new(parent: Option<&mut Heartbeat>,
                window_size: u64,
                buffer_depth: u64, 
@@ -64,6 +67,7 @@ impl Heartbeat {
         Ok(Heartbeat { hb: heart, })
     }
 
+    /// Issue a heartbeat.
     pub fn heartbeat(&mut self,
                      tag: u64,
                      work: u64,
@@ -78,18 +82,21 @@ impl Heartbeat {
         }
     }
 
+    /// Utility function to get the most recent user-specified tag
     pub fn get_tag(&mut self) -> u64 {
         unsafe {
             hb_get_user_tag(self.hb)
         }
     }
 
+    /// Utility function to get the current window performance.
     pub fn get_window_perf(&mut self) -> f64 {
         unsafe {
             hb_get_window_rate(self.hb)
         }
     }
 
+    /// Utility function to get the current window power.
     pub fn get_window_pwr(&mut self) -> f64 {
         unsafe {
             hb_get_window_power(self.hb)
@@ -98,6 +105,7 @@ impl Heartbeat {
 }
 
 impl Drop for Heartbeat {
+    /// Cleans up and deallocates the underlying C struct.
     fn drop(&mut self) {
         unsafe {
             heartbeat_finish(self.hb);
