@@ -39,7 +39,7 @@ impl Heartbeat {
                window_size: u64,
                buffer_depth: u64, 
                log_name: Option<&str>,
-               energy_impl: Option<&mut EnergyMon>) -> Result<Heartbeat, String> {
+               energy_impl: Option<&mut EnergyMon>) -> Result<Heartbeat, &'static str> {
         let parent = match parent {
             Some(p) => p.hb,
             None => ptr::null_mut(),
@@ -62,7 +62,7 @@ impl Heartbeat {
                                    num_energy_impls, em)
         };
         if heart.is_null() {
-            return Err("Failed to initialize heartbeat".to_string());
+            return Err("Failed to initialize heartbeat");
         }
         Ok(Heartbeat { hb: heart, })
     }
