@@ -40,26 +40,20 @@ impl Heartbeat {
                buffer_depth: u64, 
                log_name: Option<&CString>,
                energy_impl: Option<&mut EnergyMon>) -> Result<Heartbeat, &'static str> {
-        let parent = match parent {
+        let parent_ptr: *mut c_void = match parent {
             Some(p) => p.hb,
             None => ptr::null_mut(),
         };
-        let log_ptr = match log_name {
+        let log_ptr: *const c_char = match log_name {
           Some(n) => n.as_ptr(),
           None => ptr::null(),
         };
-        let num_energy_impls: u64;
-        let mut em: *mut EnergyMon;
-        if energy_impl.is_some() {
-            num_energy_impls = 1;
-            em = energy_impl.unwrap();
-        } else {
-            num_energy_impls = 0;
-            em = ptr::null_mut();
-        }
-        let heart = unsafe {
-            heartbeat_acc_pow_init(parent, window_size, buffer_depth, log_ptr,
-                                   num_energy_impls, em)
+        let (num_em, em_ptr): (u64, *mut EnergyMon) = match energy_impl {
+          Some(e) => (1, e),
+          None => (0, ptr::null_mut()),
+        };
+        let heart: *mut c_void = unsafe {
+            heartbeat_acc_pow_init(parent_ptr, window_size, buffer_depth, log_ptr, num_em, em_ptr)
         };
         if heart.is_null() {
             return Err("Failed to initialize heartbeat");
@@ -73,7 +67,7 @@ impl Heartbeat {
                      work: u64,
                      accuracy: f64,
                      hb_prev: Option<&Heartbeat>) -> i64 {
-        let hb_prev = match hb_prev {
+        let hb_prev: *mut c_void = match hb_prev {
             Some(p) => p.hb,
             None => ptr::null_mut(),
         };
@@ -120,6 +114,8 @@ mod test {
     #[test]
     fn test_no_energymon() {
         let mut hb = Heartbeat::new(None, 20, 20, None, None).unwrap();
-        hb.heartbeat(0, 1, 0.0, None);
+        hb.heartbeat(1, 1, 1.0, None);
+        assert!(hb.get_tag() == 1);
+        // can't really test performance and power accurately
     }
 }
