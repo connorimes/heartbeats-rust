@@ -1,7 +1,8 @@
 use libc::{uint64_t, int64_t, c_void, c_char, c_double};
 use std::ffi::CString;
 use std::ptr;
-use energymon_sys::energymon::EnergyMon;
+
+pub type HeartbeatReadEnergyFn = unsafe extern fn() -> c_double;
 
 #[link(name = "hbt-acc-pow")]
 extern {
@@ -9,8 +10,7 @@ extern {
                               window_size: uint64_t,
                               buffer_depth: uint64_t,
                               log_name: *const c_char,
-                              num_energy_impls: uint64_t,
-                              energy_impls: *mut EnergyMon) -> *mut c_void;
+                              read_energy_fn: Option<HeartbeatReadEnergyFn>) -> *mut c_void;
 
     fn heartbeat_acc(hb: *mut c_void,
                      user_tag: uint64_t,
@@ -39,7 +39,7 @@ impl Heartbeat {
                window_size: u64,
                buffer_depth: u64, 
                log_name: Option<&CString>,
-               energy_impl: Option<&mut EnergyMon>) -> Result<Heartbeat, &'static str> {
+               read_energy_fn: Option<HeartbeatReadEnergyFn>) -> Result<Heartbeat, &'static str> {
         let parent_ptr: *mut c_void = match parent {
             Some(p) => p.hb,
             None => ptr::null_mut(),
@@ -48,12 +48,8 @@ impl Heartbeat {
           Some(n) => n.as_ptr(),
           None => ptr::null(),
         };
-        let (num_em, em_ptr): (u64, *mut EnergyMon) = match energy_impl {
-          Some(e) => (1, e),
-          None => (0, ptr::null_mut()),
-        };
         let heart: *mut c_void = unsafe {
-            heartbeat_acc_pow_init(parent_ptr, window_size, buffer_depth, log_ptr, num_em, em_ptr)
+            heartbeat_acc_pow_init(parent_ptr, window_size, buffer_depth, log_ptr, read_energy_fn)
         };
         if heart.is_null() {
             return Err("Failed to initialize heartbeat");
@@ -110,6 +106,7 @@ impl Drop for Heartbeat {
 #[cfg(test)]
 mod test {
     use super::Heartbeat;
+    use std::ffi::CString;
 
     #[test]
     fn test_no_energymon() {
@@ -117,5 +114,22 @@ mod test {
         hb.heartbeat(1, 1, 1.0, None);
         assert!(hb.get_tag() == 1);
         // can't really test performance and power accurately
+    }
+
+    unsafe extern fn test_get_energy() -> f64 {
+      static mut energy: f64 = 0.0;
+      energy += 1.0;
+      energy
+    }
+
+    #[test]
+    fn test_energy() {
+        let mut hb = Heartbeat::new(None, 20, 20, Some(&CString::new("heartbeat.log").unwrap()),
+                                    Some(test_get_energy)).unwrap();
+        hb.heartbeat(1, 1, 1.0, None);
+        assert!(hb.get_tag() == 1);
+        hb.heartbeat(2, 1, 1.0, None);
+        // can't really test performance and power accurately
+        // TODO: Add wrappers to utility functions to get energy, etc.
     }
 }
