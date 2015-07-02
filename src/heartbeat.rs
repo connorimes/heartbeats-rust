@@ -27,12 +27,6 @@ extern {
     fn hb_get_window_power(hb: *const c_void) -> c_double;
 }
 
-fn add_null_terminator(f: &str) -> CString {
-    let mut ntf: String = f.to_string();
-    ntf.push('\0');
-    CString::new(&ntf[..]).unwrap()
-}
-
 /// A `Heartbeat` is used for tracking performance/accuracy/power of recurring jobs.
 pub struct Heartbeat {
     /// The underlying C struct `heartbeat_t`.
@@ -44,14 +38,14 @@ impl Heartbeat {
     pub fn new(parent: Option<&mut Heartbeat>,
                window_size: u64,
                buffer_depth: u64, 
-               log_name: Option<&str>,
+               log_name: Option<&CString>,
                energy_impl: Option<&mut EnergyMon>) -> Result<Heartbeat, &'static str> {
         let parent = match parent {
             Some(p) => p.hb,
             None => ptr::null_mut(),
         };
-        let log_name = match log_name {
-          Some(n) => add_null_terminator(n).as_ptr(),
+        let log_ptr = match log_name {
+          Some(n) => n.as_ptr(),
           None => ptr::null(),
         };
         let num_energy_impls: u64;
@@ -64,7 +58,7 @@ impl Heartbeat {
             em = ptr::null_mut();
         }
         let heart = unsafe {
-            heartbeat_acc_pow_init(parent, window_size, buffer_depth, log_name,
+            heartbeat_acc_pow_init(parent, window_size, buffer_depth, log_ptr,
                                    num_energy_impls, em)
         };
         if heart.is_null() {
