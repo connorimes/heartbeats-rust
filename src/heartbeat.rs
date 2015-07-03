@@ -2,7 +2,7 @@ use libc::{uint64_t, int64_t, c_void, c_char, c_double};
 use std::ffi::CString;
 use std::ptr;
 
-pub type HeartbeatReadEnergyFn = unsafe extern fn(*mut c_void) -> c_double;
+pub type HeartbeatReadEnergyFn = extern fn(*mut c_void) -> c_double;
 
 #[link(name = "hbt-acc-pow")]
 extern {
@@ -124,7 +124,7 @@ mod test {
         // can't really test performance and power accurately
     }
 
-    unsafe extern fn test_get_energy(ref_arg: *mut c_void) -> c_double {
+    extern fn test_get_energy(ref_arg: *mut c_void) -> c_double {
         // our test is actually just updating the value of a c_double pointer passed to us
         let energy: *mut c_double = ref_arg as *mut c_double;
         *energy += 1.0;
