@@ -2,7 +2,7 @@ use libc::{uint64_t, int64_t, c_void, c_char, c_double};
 use std::ffi::CString;
 use std::ptr;
 
-pub type HeartbeatReadEnergyFn = unsafe extern fn() -> c_double;
+pub type HeartbeatReadEnergyFn = unsafe extern fn(*mut c_void) -> c_double;
 
 #[link(name = "hbt-acc-pow")]
 extern {
@@ -10,7 +10,8 @@ extern {
                               window_size: uint64_t,
                               buffer_depth: uint64_t,
                               log_name: *const c_char,
-                              read_energy_fn: Option<HeartbeatReadEnergyFn>) -> *mut c_void;
+                              read_energy_fn: Option<HeartbeatReadEnergyFn>,
+                              ref_arg: *mut c_void) -> *mut c_void;
 
     fn heartbeat_acc(hb: *mut c_void,
                      user_tag: uint64_t,
@@ -39,17 +40,23 @@ impl Heartbeat {
                window_size: u64,
                buffer_depth: u64, 
                log_name: Option<&CString>,
-               read_energy_fn: Option<HeartbeatReadEnergyFn>) -> Result<Heartbeat, &'static str> {
+               read_energy_fn: Option<HeartbeatReadEnergyFn>,
+               ref_arg: Option<*mut c_void>) -> Result<Heartbeat, &'static str> {
         let parent_ptr: *mut c_void = match parent {
             Some(p) => p.hb,
             None => ptr::null_mut(),
         };
         let log_ptr: *const c_char = match log_name {
-          Some(n) => n.as_ptr(),
-          None => ptr::null(),
+            Some(n) => n.as_ptr(),
+            None => ptr::null(),
+        };
+        let ref_arg_ptr: *mut c_void = match ref_arg {
+            Some(r) => r,
+            None => ptr::null_mut(),
         };
         let heart: *mut c_void = unsafe {
-            heartbeat_acc_pow_init(parent_ptr, window_size, buffer_depth, log_ptr, read_energy_fn)
+            heartbeat_acc_pow_init(parent_ptr, window_size, buffer_depth, log_ptr, read_energy_fn,
+                                   ref_arg_ptr)
         };
         if heart.is_null() {
             return Err("Failed to initialize heartbeat");
@@ -107,25 +114,28 @@ impl Drop for Heartbeat {
 mod test {
     use super::Heartbeat;
     use std::ffi::CString;
+    use libc::{c_void, c_double};
 
     #[test]
     fn test_no_energymon() {
-        let mut hb = Heartbeat::new(None, 20, 20, None, None).unwrap();
+        let mut hb = Heartbeat::new(None, 20, 20, None, None, None).unwrap();
         hb.heartbeat(1, 1, 1.0, None);
         assert!(hb.get_tag() == 1);
         // can't really test performance and power accurately
     }
 
-    unsafe extern fn test_get_energy() -> f64 {
-      static mut energy: f64 = 0.0;
-      energy += 1.0;
-      energy
+    unsafe extern fn test_get_energy(ref_arg: *mut c_void) -> c_double {
+        // our test is actually just updating the value of a c_double pointer passed to us
+        let energy: *mut c_double = ref_arg as *mut c_double;
+        *energy += 1.0;
+        *energy
     }
 
     #[test]
     fn test_energy() {
+        let mut energy = 0.0;
         let mut hb = Heartbeat::new(None, 20, 20, Some(&CString::new("heartbeat.log").unwrap()),
-                                    Some(test_get_energy)).unwrap();
+                                    Some(test_get_energy), Some(&mut energy as *mut f64 as *mut c_void)).unwrap();
         hb.heartbeat(1, 1, 1.0, None);
         assert!(hb.get_tag() == 1);
         hb.heartbeat(2, 1, 1.0, None);
