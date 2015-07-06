@@ -1,5 +1,5 @@
 [package]
-name = "heartbeats-sys"
+name = "heartbeats_sys"
 version = "0.1.0"
 authors = ["Connor Imes <cimes@mozilla.com>"]
 
