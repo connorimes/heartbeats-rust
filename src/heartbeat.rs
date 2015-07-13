@@ -1,8 +1,8 @@
-use libc::{uint64_t, int64_t, c_void, c_char, c_double};
+use libc::{uint64_t, int64_t, c_void, c_char, c_double, c_longlong};
 use std::ffi::CString;
 use std::ptr;
 
-pub type HeartbeatReadEnergyFn = extern fn(*mut c_void) -> c_double;
+pub type HeartbeatReadEnergyFn = extern fn(*mut c_void) -> c_longlong;
 
 #[link(name = "hbt-acc-pow")]
 extern {
@@ -114,7 +114,7 @@ impl Drop for Heartbeat {
 mod test {
     use super::Heartbeat;
     use std::ffi::CString;
-    use libc::{c_void, c_double};
+    use libc::{c_void, c_longlong};
 
     #[test]
     fn test_no_energymon() {
@@ -124,22 +124,22 @@ mod test {
         // can't really test performance and power accurately
     }
 
-    extern fn test_get_energy(ref_arg: *mut c_void) -> c_double {
-        // our test is actually just updating the value of a c_double pointer passed to us
-        let energy: *mut c_double = ref_arg as *mut c_double;
-        *energy += 1.0;
-        *energy
+    extern fn test_get_energy(ref_arg: *mut c_void) -> c_longlong {
+        // our test is actually just updating the value of a pointer passed to us
+        let energy: *mut c_longlong = ref_arg as *mut c_longlong;
+        unsafe {
+            *energy += 1000000;
+            *energy
+        }
     }
 
     #[test]
     fn test_energy() {
-        let mut energy = 0.0;
+        let mut energy: i64 = 0;
         let mut hb = Heartbeat::new(None, 20, 20, Some(&CString::new("heartbeat.log").unwrap()),
-                                    Some(test_get_energy), Some(&mut energy as *mut f64 as *mut c_void)).unwrap();
+                                    Some(test_get_energy), Some(&mut energy as *mut i64 as *mut c_void)).unwrap();
         hb.heartbeat(1, 1, 1.0, None);
         assert!(hb.get_tag() == 1);
         hb.heartbeat(2, 1, 1.0, None);
-        // can't really test performance and power accurately
-        // TODO: Add wrappers to utility functions to get energy, etc.
     }
 }
