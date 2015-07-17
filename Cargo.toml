@@ -1,7 +1,11 @@
 [package]
-name = "heartbeats_tree_sys"
+name = "heartbeats-tree-sys"
 version = "0.1.0"
-authors = ["Connor Imes <cimes@mozilla.com>"]
+authors = ["Connor Imes <connor.k.imes@gmail.com>"]
+description = "FFI bindings to libhbt-acc-pow"
+homepage = "https://github.com/connorimes/heartbeats-tree-sys"
+repository = "https://github.com/connorimes/heartbeats-tree-sys"
+keywords = ["heartbeats", "timing", "performance", "energy", "power", "bindings"]
 
 [dependencies]
 libc = "0.1"
