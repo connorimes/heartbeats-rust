@@ -6,7 +6,7 @@ use super::*;
 /// A `Heartbeat` is used for tracking performance/accuracy/power of recurring jobs.
 pub struct Heartbeat {
     /// The underlying C struct `heartbeat_t`.
-    pub hb: *mut c_void,
+    pub hb: *mut heartbeat_t,
 }
 
 impl Heartbeat {
@@ -15,9 +15,9 @@ impl Heartbeat {
                window_size: u64,
                buffer_depth: u64, 
                log_name: Option<&CString>,
-               read_energy_fn: Option<HeartbeatReadEnergyFn>,
+               read_energy_fn: Option<hb_get_energy_func>,
                ref_arg: Option<*mut c_void>) -> Result<Heartbeat, &'static str> {
-        let parent_ptr: *mut c_void = match parent {
+        let parent_ptr: *mut heartbeat_t = match parent {
             Some(p) => p.hb,
             None => ptr::null_mut(),
         };
@@ -29,7 +29,7 @@ impl Heartbeat {
             Some(r) => r,
             None => ptr::null_mut(),
         };
-        let heart: *mut c_void = unsafe {
+        let heart: *mut heartbeat_t = unsafe {
             heartbeat_acc_pow_init(parent_ptr, window_size, buffer_depth, log_ptr, read_energy_fn,
                                    ref_arg_ptr)
         };
@@ -45,7 +45,7 @@ impl Heartbeat {
                      work: u64,
                      accuracy: f64,
                      hb_prev: Option<&Heartbeat>) -> i64 {
-        let hb_prev: *mut c_void = match hb_prev {
+        let hb_prev: *mut heartbeat_t = match hb_prev {
             Some(p) => p.hb,
             None => ptr::null_mut(),
         };
