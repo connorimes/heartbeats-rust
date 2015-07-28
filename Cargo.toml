@@ -8,5 +8,7 @@ homepage = "https://github.com/connorimes/heartbeats-tree-sys"
 repository = "https://github.com/connorimes/heartbeats-tree-sys"
 keywords = ["heartbeats", "timing", "performance", "energy", "power", "bindings"]
 
+build = "build.rs"
+
 [dependencies]
 libc = "0.1"

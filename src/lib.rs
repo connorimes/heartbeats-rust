@@ -96,8 +96,7 @@ pub struct heartbeat_t {
   pub ld: _heartbeat_local_data,
 }
 
-#[link(name = "hbt-acc-pow")]
-extern {
+extern "C" {
     pub fn heartbeat_acc_pow_init(parent: *mut heartbeat_t,
 	                              window_size: uint64_t,
 	                              buffer_depth: uint64_t,
